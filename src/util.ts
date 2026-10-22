@@ -1,4 +1,4 @@
-export const uid = () => Math.random().toString(36).slice(2, 10);
+export const uid = () => crypto.randomUUID();
 
 export const CORES_BAILARINO = [
   "#F472B6", "#60A5FA", "#34D399", "#FBBF24", "#A78BFA",

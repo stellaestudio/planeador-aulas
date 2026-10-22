@@ -13,14 +13,15 @@ Funciona no telemóvel e no computador e pode ser instalada no ecrã inicial.
   - Durante/depois da aula: marcar feito/não feito (grava a cada toque), juntar extras, resumo para WhatsApp (copiar ou abrir no WhatsApp).
 - **Espetáculos** com turmas participantes.
 - **Formações 2D**: arrastar bailarinos, trajetórias, grelha, copiar formação, exportar PNG, imprimir/PDF.
-- **Cópias de segurança** (ícone da disquete): descarregar e importar um ficheiro `.json`.
+- **Conta e cópias de segurança** (ícone da disquete): sair da conta, descarregar e importar um ficheiro `.json`.
 
-Os dados ficam guardados **só no browser onde se usa a app** (por enquanto). Por isso convém descarregar uma cópia de vez em quando.
+Cada professor entra com o seu email (recebe um código, sem password) e os dados ficam guardados no Supabase, na sua conta: aparecem em qualquer aparelho onde entre e ninguém mais os vê. Ver `supabase/README.md` para a configuração.
 
 ## Como está organizado o código
 - `src/tipos.ts`: o modelo de dados.
 - `src/regras.ts`: as regras (o que passa para a aula seguinte, contagens, tempos, resumo).
-- `src/dados/`: onde os dados são lidos e guardados. Para passar para o Supabase troca-se só esta pasta.
+- `src/dados/`: leitura e gravação no Supabase. `linhas.ts` converte entre o formato dos ecrãs e as tabelas; `armazenamento.ts` compara com o que já está gravado e só envia o que mudou.
+- `supabase/`: as tabelas (SQL) e o texto do email com o código.
 - `src/areas/<área>/`: um ecrã por área (turmas, biblioteca, aulas, espetáculos, formações, cópias).
 - `src/ui.tsx`: botões, cartões e campos reutilizados.
 
@@ -36,7 +37,6 @@ Importar este repositório na Vercel; ela deteta o Vite sozinha (build `npm run 
 Nota: o plano Hobby da Vercel é só para uso pessoal; para vender a app é preciso o plano Pro.
 
 ## Próximos passos
-1. Supabase (Postgres + login por link mágico), tabelas com `owner_id` e Row Level Security, para cada professor ter os seus dados.
-2. Passar para o Supabase os dados já registados no browser (o formato já é lido por `src/dados/normalizar.ts`).
-3. Aulas recorrentes e vista de calendário.
-4. Depois: sugestões, PDF a sério, melhorias das formações (saídas com trajetória, zoom, seleção múltipla, animação).
+1. Aulas recorrentes e vista de calendário.
+2. Ler os dados sem rede (hoje é preciso internet para abrir e gravar).
+3. Depois: sugestões, PDF a sério, melhorias das formações (saídas com trajetória, zoom, seleção múltipla, animação).

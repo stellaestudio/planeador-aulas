@@ -1,6 +1,7 @@
 // Transforma qualquer JSON (cópia desta app ou dados do protótipo) num objeto Dados válido.
 // Campos em falta ganham valores por omissão; nada é inventado.
 import type { Aula, Dados, ItemAula } from "../tipos";
+import { uid } from "../util";
 
 export const dadosVazios = (): Dados => ({
   turmas: [],
@@ -65,7 +66,7 @@ export function normalizar(bruto: any): Dados {
     }
   }
 
-  return {
+  return semReferenciasPerdidas({
     turmas,
     objectivos: lista(d.objectivos).map((o: any) => ({ id: texto(o.id), nome: texto(o.nome), arquivado: Boolean(o.arquivado) })),
     biblioteca: lista(d.biblioteca).map((m: any) => ({
@@ -91,9 +92,89 @@ export function normalizar(bruto: any): Dados {
         posicoes: lista(f.posicoes).map((p: any) => ({ bailarinoId: texto(p.bailarinoId), x: Number(p.x) || 0, y: Number(p.y) || 0 })),
       })),
     })),
+  });
+}
+
+/** Tira ligações a coisas que já não existem (a base de dados não as aceitaria). */
+function semReferenciasPerdidas(d: Dados): Dados {
+  const existe = (lista: { id: string }[]) => {
+    const ids = new Set(lista.map((x) => x.id));
+    return (id: string) => ids.has(id);
+  };
+  const objetivo = existe(d.objectivos);
+  const item = existe(d.biblioteca);
+  const turma = existe(d.turmas);
+  const coreo = (id: string) => d.coreografias.some((c) => c.id === id && turma(c.turmaId));
+  const soItem = (id: string) => (item(id) ? id : "");
+  return {
+    objectivos: d.objectivos,
+    biblioteca: d.biblioteca.map((m) => ({ ...m, parentId: soItem(m.parentId), objectivoIds: m.objectivoIds.filter(objetivo) })),
+    turmas: d.turmas.map((t) => ({
+      ...t,
+      aquecimentoPadraoId: soItem(t.aquecimentoPadraoId),
+      alongamentoPadraoId: soItem(t.alongamentoPadraoId),
+      objectivoIds: t.objectivoIds.filter(objetivo),
+    })),
+    espetaculos: d.espetaculos.map((e) => ({ ...e, turmaIds: e.turmaIds.filter(turma) })),
+    coreografias: d.coreografias
+      .filter((c) => turma(c.turmaId))
+      .map((c) => {
+        const bailarino = existe(c.bailarinos);
+        return { ...c, formacoes: c.formacoes.map((f) => ({ ...f, posicoes: f.posicoes.filter((p) => bailarino(p.bailarinoId)) })) };
+      }),
+    aulas: d.aulas
+      .filter((a) => turma(a.turmaId))
+      .map((a) => ({
+        ...a,
+        blocos: {
+          aquecimento: { ...a.blocos.aquecimento, itemId: soItem(a.blocos.aquecimento.itemId) },
+          movimentos: a.blocos.movimentos.filter((i) => item(i.itemId)),
+          dinamicas: a.blocos.dinamicas.filter((i) => item(i.itemId)),
+          coreografia: { ...a.blocos.coreografia, coreografiaId: coreo(a.blocos.coreografia.coreografiaId) ? a.blocos.coreografia.coreografiaId : "" },
+          alongamento: { ...a.blocos.alongamento, itemId: soItem(a.blocos.alongamento.itemId) },
+        },
+      })),
   };
 }
 
 export function resumoDados(d: Dados): string {
   return `${d.turmas.length} turmas, ${d.biblioteca.length} itens na biblioteca, ${d.aulas.length} aulas, ${d.espetaculos.length} espetáculos, ${d.coreografias.length} coreografias`;
+}
+
+/**
+ * Dá ids novos a tudo, mantendo as ligações. Usado ao importar uma cópia, para a
+ * importação funcionar mesmo que a cópia venha de outra conta.
+ */
+export function comNovosIds(d: Dados): Dados {
+  const mapa = new Map<string, string>();
+  const n = (id: string) => {
+    if (!id) return id;
+    if (!mapa.has(id)) mapa.set(id, uid());
+    return mapa.get(id)!;
+  };
+  return {
+    turmas: d.turmas.map((t) => ({ ...t, id: n(t.id), aquecimentoPadraoId: n(t.aquecimentoPadraoId), alongamentoPadraoId: n(t.alongamentoPadraoId), objectivoIds: t.objectivoIds.map(n) })),
+    objectivos: d.objectivos.map((o) => ({ ...o, id: n(o.id) })),
+    biblioteca: d.biblioteca.map((m) => ({ ...m, id: n(m.id), parentId: n(m.parentId), objectivoIds: m.objectivoIds.map(n) })),
+    espetaculos: d.espetaculos.map((e) => ({ ...e, id: n(e.id), turmaIds: e.turmaIds.map(n) })),
+    aulas: d.aulas.map((a) => ({
+      ...a,
+      id: n(a.id),
+      turmaId: n(a.turmaId),
+      blocos: {
+        aquecimento: { ...a.blocos.aquecimento, itemId: n(a.blocos.aquecimento.itemId) },
+        movimentos: a.blocos.movimentos.map((i) => ({ ...i, itemId: n(i.itemId) })),
+        dinamicas: a.blocos.dinamicas.map((i) => ({ ...i, itemId: n(i.itemId) })),
+        coreografia: { ...a.blocos.coreografia, coreografiaId: n(a.blocos.coreografia.coreografiaId) },
+        alongamento: { ...a.blocos.alongamento, itemId: n(a.blocos.alongamento.itemId) },
+      },
+    })),
+    coreografias: d.coreografias.map((c) => ({
+      ...c,
+      id: n(c.id),
+      turmaId: n(c.turmaId),
+      bailarinos: c.bailarinos.map((b) => ({ ...b, id: n(b.id) })),
+      formacoes: c.formacoes.map((f) => ({ ...f, id: n(f.id), posicoes: f.posicoes.map((p) => ({ ...p, bailarinoId: n(p.bailarinoId) })) })),
+    })),
+  };
 }

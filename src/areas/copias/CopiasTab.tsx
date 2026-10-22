@@ -1,18 +1,20 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, LogOut, Upload } from "lucide-react";
 import type { Dados } from "../../tipos";
 import { hojeISO } from "../../util";
 import { ficheiroCopia } from "../../dados/armazenamento";
-import { normalizar, resumoDados } from "../../dados/normalizar";
+import { comNovosIds, normalizar, resumoDados } from "../../dados/normalizar";
+import { supabase } from "../../dados/supabase";
 import { Cabecalho, Card, GhostButton, PrimaryButton } from "../../ui";
 
 interface Props {
   dados: Dados;
+  email: string;
   onSubstituir: (d: Dados) => void;
   onVoltar: () => void;
 }
 
-export function CopiasTab({ dados, onSubstituir, onVoltar }: Props) {
+export function CopiasTab({ dados, email, onSubstituir, onVoltar }: Props) {
   const ficheiroRef = useRef<HTMLInputElement>(null);
   const [mensagem, setMensagem] = useState<{ ok: boolean; texto: string } | null>(null);
 
@@ -30,7 +32,7 @@ export function CopiasTab({ dados, onSubstituir, onVoltar }: Props) {
     e.target.value = "";
     if (!f) return;
     try {
-      const novos = normalizar(JSON.parse(await f.text()));
+      const novos = comNovosIds(normalizar(JSON.parse(await f.text())));
       const aviso = `O ficheiro tem: ${resumoDados(novos)}.\n\nIsto SUBSTITUI tudo o que está agora na app (${resumoDados(dados)}).\n\nContinuar?`;
       if (!confirm(aviso)) return;
       onSubstituir(novos);
@@ -42,12 +44,20 @@ export function CopiasTab({ dados, onSubstituir, onVoltar }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <Cabecalho titulo="Cópias de segurança" onVoltar={onVoltar} />
+      <Cabecalho titulo="Conta e cópias de segurança" onVoltar={onVoltar} />
+
+      <Card className="flex flex-row items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-xs text-gray-500">Entraste como</div>
+          <div className="text-sm font-medium text-gray-800 truncate">{email}</div>
+        </div>
+        <GhostButton onClick={() => confirm("Sair da conta neste aparelho?") && supabase.auth.signOut()} className="shrink-0"><LogOut size={14} /> Sair</GhostButton>
+      </Card>
 
       <Card>
         <div className="text-sm font-medium text-gray-700 mb-1">Guardar uma cópia</div>
         <p className="text-xs text-gray-500 mb-3">
-          Os dados ficam só neste telemóvel/computador. Descarrega uma cópia de vez em quando (por exemplo, para o Google Drive) para não perderes nada.
+          Os dados ficam guardados na tua conta e aparecem em qualquer aparelho onde entres. Se quiseres uma cópia extra (por exemplo, para o Google Drive), descarrega-a aqui.
         </p>
         <p className="text-xs text-gray-500 mb-3">Agora: {resumoDados(dados)}.</p>
         <PrimaryButton onClick={exportar} className="w-full"><Download size={15} /> Descarregar cópia</PrimaryButton>
