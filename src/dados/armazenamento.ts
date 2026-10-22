@@ -10,12 +10,11 @@ export interface Armazenamento {
 }
 
 const CHAVE = "planeador-dados";
-const CHAVE_PROTOTIPO = "dance-app-data"; // chave usada pelo protótipo
 const VERSAO = 1;
 
 export const armazenamentoLocal: Armazenamento = {
   async carregar() {
-    const guardado = localStorage.getItem(CHAVE) ?? localStorage.getItem(CHAVE_PROTOTIPO);
+    const guardado = localStorage.getItem(CHAVE);
     return guardado ? normalizar(JSON.parse(guardado)) : null;
   },
   async guardar(dados) {

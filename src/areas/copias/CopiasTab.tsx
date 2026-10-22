@@ -56,7 +56,7 @@ export function CopiasTab({ dados, onSubstituir, onVoltar }: Props) {
       <Card>
         <div className="text-sm font-medium text-gray-700 mb-1">Importar uma cópia</div>
         <p className="text-xs text-gray-500 mb-3">
-          Serve para passar os dados para outro aparelho, recuperar uma cópia antiga ou trazer os dados do protótipo (ficheiro .json exportado de lá).
+          Serve para passar os dados para outro aparelho ou recuperar uma cópia antiga.
         </p>
         <input ref={ficheiroRef} type="file" accept="application/json,.json" className="hidden" onChange={importar} />
         <GhostButton onClick={() => ficheiroRef.current?.click()} className="w-full"><Upload size={15} /> Escolher ficheiro…</GhostButton>
