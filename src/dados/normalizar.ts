@@ -92,7 +92,11 @@ export function normalizar(bruto: any): Dados {
         nome: texto(f.nome),
         notas: texto(f.notas),
         posicoes: lista(f.posicoes).map((p: any) => ({ bailarinoId: texto(p.bailarinoId), x: Number(p.x) || 0, y: Number(p.y) || 0 })),
+        inicio: f.inicio === null || f.inicio === undefined || f.inicio === "" ? null : Number(f.inicio) || 0,
+        transicao: f.transicao === undefined ? 2 : Number(f.transicao) || 0,
       })),
+      musicaPath: texto(c.musicaPath),
+      musicaNome: texto(c.musicaNome),
     })),
   });
 }

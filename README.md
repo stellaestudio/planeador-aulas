@@ -14,6 +14,7 @@ Funciona no telemóvel e no computador e pode ser instalada no ecrã inicial.
   - Durante/depois da aula: marcar feito/não feito (grava a cada toque), juntar extras, resumo para WhatsApp (copiar ou abrir no WhatsApp).
 - **Espetáculos** com turmas participantes.
 - **Formações 2D**: arrastar bailarinos, trajetórias, grelha, copiar formação, exportar PNG, imprimir/PDF.
+- **Música e animação**: cada coreografia pode ter a sua música (guardada no Supabase Storage, pasta privada de cada professor); cada formação tem o momento em que muda e quanto tempo demora a transição (botão "Agora" com a música a tocar). "Ver animação" mostra os bailarinos a deslizar entre formações com a música e grava um vídeo vertical (720×1280) para descarregar ou partilhar.
 - **Conta e cópias de segurança** (ícone da disquete): sair da conta, descarregar e importar um ficheiro `.json`.
 
 Cada professor entra com o seu email (recebe um código, sem password) e os dados ficam guardados no Supabase, na sua conta: aparecem em qualquer aparelho onde entre e ninguém mais os vê. Ver `supabase/README.md` para a configuração.
@@ -40,4 +41,4 @@ Nota: o plano Hobby da Vercel é só para uso pessoal; para vender a app é prec
 ## Próximos passos
 1. Aulas recorrentes e vista de calendário.
 2. Ler os dados sem rede (hoje é preciso internet para abrir e gravar).
-3. Depois: sugestões, PDF a sério, melhorias das formações (saídas com trajetória, zoom, seleção múltipla, animação).
+3. Depois: sugestões, PDF a sério, melhorias das formações (zoom, seleção múltipla).

@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Download, Eye, EyeOff, Grid3x3, Plus, Printer, Trash2, Users, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Clapperboard, Download, Eye, EyeOff, Grid3x3, Music2, Plus, Printer, Timer, Trash2, Users, X } from "lucide-react";
 import type { Coreografia, Formacao } from "../../tipos";
 import { CORES_BAILARINO, corParaIndice, uid } from "../../util";
 import { Cabecalho, Card, GhostButton, IconButton, inputClass, PrimaryButton } from "../../ui";
 import { exportarPng, PalcoEditor, PalcoEstatico } from "./Palco";
+import { Apresentacao } from "./Apresentacao";
+import { fmtTempo, inicios, lerTempo } from "./animacao";
+import { apagarMusica, enviarMusica, urlDaMusica } from "../../dados/musicas";
 
 interface Props {
   coreografia: Coreografia;
@@ -20,6 +23,44 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
   const [verBailarinos, setVerBailarinos] = useState(false);
   const [aImprimir, setAImprimir] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const musicaInput = useRef<HTMLInputElement>(null);
+  const [musicaUrl, setMusicaUrl] = useState<string | null>(null);
+  const [estadoMusica, setEstadoMusica] = useState<string | null>(null); // "A enviar…", erros
+  const [apresentar, setApresentar] = useState(false);
+
+  useEffect(() => {
+    setMusicaUrl(null);
+    if (!coreografia.musicaPath) return;
+    let ativo = true;
+    urlDaMusica(coreografia.musicaPath)
+      .then((u) => ativo && setMusicaUrl(u))
+      .catch(() => ativo && setEstadoMusica("Não consegui carregar a música."));
+    return () => {
+      ativo = false;
+    };
+  }, [coreografia.musicaPath]);
+
+  const escolherMusica = async (ficheiro: File | undefined) => {
+    if (!ficheiro) return;
+    if (ficheiro.size > 50 * 1024 * 1024) return setEstadoMusica("O ficheiro tem mais de 50 MB. Escolhe uma versão mais leve (mp3).");
+    setEstadoMusica("A enviar a música…");
+    try {
+      const caminho = await enviarMusica(ficheiro, coreografia.id);
+      const antiga = coreografia.musicaPath;
+      onChange({ ...coreografia, musicaPath: caminho, musicaNome: ficheiro.name });
+      apagarMusica(antiga).catch(() => {});
+      setEstadoMusica(null);
+    } catch (e) {
+      setEstadoMusica(`Não consegui enviar a música: ${(e as Error).message}`);
+    }
+  };
+
+  const tirarMusica = () => {
+    if (!confirm("Tirar a música desta coreografia? Os momentos das formações ficam guardados.")) return;
+    apagarMusica(coreografia.musicaPath).catch(() => {});
+    onChange({ ...coreografia, musicaPath: "", musicaNome: "" });
+  };
 
   const formacoes = coreografia.formacoes;
   const idx = formacoes.findIndex((f) => f.id === ativaId);
@@ -58,6 +99,8 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
       nome: `Formação ${formacoes.length + 1}`,
       notas: "",
       posicoes: copiarAtual && ativa ? ativa.posicoes.map((p) => ({ ...p })) : [],
+      inicio: null,
+      transicao: 2,
     };
     // A nova formação entra logo a seguir à atual.
     const pos = copiarAtual && idx >= 0 ? idx + 1 : formacoes.length;
@@ -129,6 +172,25 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
         )}
       </Card>
 
+      <Card>
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700 min-w-0">
+            <Music2 size={15} className="text-purple-500 shrink-0" />
+            <span className="truncate">{coreografia.musicaNome || "Música"}</span>
+          </span>
+          <div className="flex gap-1.5 shrink-0">
+            <GhostButton onClick={() => musicaInput.current?.click()} className="py-1! text-xs!">{coreografia.musicaPath ? "Trocar" : "Escolher música"}</GhostButton>
+            {coreografia.musicaPath && <IconButton onClick={tirarMusica} perigo title="Tirar a música"><Trash2 size={13} /></IconButton>}
+          </div>
+        </div>
+        <input ref={musicaInput} type="file" accept="audio/*" className="hidden" onChange={(e) => { escolherMusica(e.target.files?.[0]); e.target.value = ""; }} />
+        {musicaUrl && <audio ref={audioRef} src={musicaUrl} controls preload="metadata" className="w-full mt-2 h-10" />}
+        {!coreografia.musicaPath && !estadoMusica && (
+          <p className="text-[11px] text-gray-400 mt-1">Junta a música para marcar em que momento muda cada formação e ver a animação com som.</p>
+        )}
+        {estadoMusica && <p className="text-xs text-gray-500 mt-2">{estadoMusica}</p>}
+      </Card>
+
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {formacoes.map((f, i) => (
           <button
@@ -137,7 +199,7 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
             onClick={() => setAtivaId(f.id)}
             className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full ${f.id === ativaId ? "bg-purple-400 text-white" : "bg-white text-gray-500"}`}
           >
-            {i + 1}. {f.nome}
+            {i + 1}. {f.nome}{f.inicio !== null && <span className="opacity-70"> · {fmtTempo(f.inicio)}</span>}
           </button>
         ))}
         {formacoes.length > 0 && (
@@ -166,6 +228,15 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
                 <Grid3x3 size={12} /> Grelha
               </button>
             </div>
+
+            <TempoDaFormacao
+              formacao={ativa}
+              inicioCalculado={inicios(formacoes)[idx]}
+              inicioAnterior={idx > 0 ? inicios(formacoes)[idx - 1] : null}
+              temMusica={Boolean(musicaUrl)}
+              tempoMusica={() => audioRef.current?.currentTime ?? 0}
+              onChange={mudarAtiva}
+            />
 
             <div className="text-center text-[10px] text-gray-400 mb-1 tracking-wide">FUNDO DO PALCO</div>
             <PalcoEditor
@@ -208,6 +279,10 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
             <textarea className={`${inputClass} mt-3`} rows={2} placeholder="Notas sobre esta formação (opcional)" value={ativa.notas} onChange={(e) => mudarAtiva({ notas: e.target.value })} />
           </Card>
 
+          <PrimaryButton onClick={() => { audioRef.current?.pause(); setApresentar(true); }}>
+            <Clapperboard size={16} /> Ver animação{musicaUrl ? " com música" : ""} / gravar vídeo
+          </PrimaryButton>
+
           <div className="flex gap-2">
             <GhostButton onClick={() => svgRef.current && exportarPng(svgRef.current, `${ativa.nome.replace(/\s+/g, "-")}.png`)} className="flex-1">
               <Download size={13} /> Exportar PNG
@@ -218,6 +293,8 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
           </div>
         </>
       )}
+
+      {apresentar && <Apresentacao coreografia={coreografia} musicaUrl={musicaUrl} onFechar={() => setApresentar(false)} />}
 
       {aImprimir &&
         createPortal(
@@ -250,6 +327,70 @@ export function CoreografiaEditor({ coreografia, onChange, onVoltar, onEliminar 
           </div>,
           document.body
         )}
+    </div>
+  );
+}
+
+/** Momento da música em que a formação começa e quanto tempo demora a transição. */
+function TempoDaFormacao({ formacao, inicioCalculado, inicioAnterior, temMusica, tempoMusica, onChange }: {
+  formacao: Formacao;
+  inicioCalculado: number;
+  inicioAnterior: number | null;
+  temMusica: boolean;
+  tempoMusica: () => number;
+  onChange: (patch: Partial<Formacao>) => void;
+}) {
+  const [texto, setTexto] = useState(formacao.inicio === null ? "" : fmtTempo(formacao.inicio));
+  const [erro, setErro] = useState(false);
+  useEffect(() => {
+    setTexto(formacao.inicio === null ? "" : fmtTempo(formacao.inicio));
+    setErro(false);
+  }, [formacao.id, formacao.inicio]);
+
+  const confirmar = () => {
+    const v = lerTempo(texto);
+    if (v === undefined) return setErro(true);
+    setErro(false);
+    onChange({ inicio: v === null ? null : Math.round(v * 10) / 10 });
+  };
+  const antesDaAnterior = inicioAnterior !== null && inicioCalculado <= inicioAnterior;
+
+  return (
+    <div className="mb-3 rounded-xl bg-purple-50 px-3 py-2.5 flex flex-col gap-1.5">
+      <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600">
+        <Timer size={14} className="text-purple-500 shrink-0" />
+        <span>Muda aos</span>
+        <input
+          className="w-16 rounded-lg border border-purple-200 bg-white px-2 py-1 text-center text-xs"
+          value={texto}
+          placeholder={fmtTempo(inicioCalculado)}
+          onChange={(e) => setTexto(e.target.value)}
+          onBlur={confirmar}
+          onKeyDown={(e) => e.key === "Enter" && confirmar()}
+          aria-label="Momento na música (minutos:segundos)"
+        />
+        {temMusica && (
+          <button type="button" onClick={() => onChange({ inicio: Math.round(tempoMusica() * 10) / 10 })} className="rounded-full bg-purple-400 text-white px-2.5 py-1 font-medium">
+            ⏱ Agora
+          </button>
+        )}
+        <span>e demora</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step={0.5}
+          className="w-14 rounded-lg border border-purple-200 bg-white px-2 py-1 text-center text-xs"
+          value={formacao.transicao}
+          onChange={(e) => onChange({ transicao: Math.max(0, Number(e.target.value) || 0) })}
+          aria-label="Duração da transição em segundos"
+        />
+        <span>s a chegar</span>
+      </div>
+      {erro && <span className="text-[11px] text-red-500">Escreve o tempo como 1:05 ou 65.</span>}
+      {antesDaAnterior && <span className="text-[11px] text-amber-600">Este momento é antes da formação anterior. Confirma a ordem.</span>}
+      {!temMusica && formacao.inicio === null && <span className="text-[11px] text-gray-400">Sem tempo definido, cada formação dura 4 segundos na animação.</span>}
+      {temMusica && <span className="text-[11px] text-gray-400">Põe a música a tocar e carrega em "Agora" no momento da mudança.</span>}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import type { Atualizar, Coreografia, Dados, Turma } from "../../tipos";
 import { corParaIndice, uid } from "../../util";
 import { Card, Field, GhostButton, inputClass, PrimaryButton, SeletorTurma, Vazio } from "../../ui";
 import { CoreografiaEditor } from "./CoreografiaEditor";
+import { apagarMusica } from "../../dados/musicas";
 
 export interface Salto {
   turmaId: string;
@@ -16,6 +17,8 @@ const novaCoreografia = (turma: Turma, nome: string): Coreografia => ({
   nome,
   bailarinos: turma.bailarinos.map((n, i) => ({ id: uid(), nome: n, cor: corParaIndice(i) })),
   formacoes: [],
+  musicaPath: "",
+  musicaNome: "",
 });
 
 interface Props {
@@ -54,6 +57,7 @@ export function CoreografiasTab({ dados, atualizar, salto, onSaltoUsado }: Props
         onEliminar={() => {
           if (!confirm(`Eliminar a coreografia "${ativa.nome}" e todas as formações?`)) return;
           atualizar("coreografias", (l) => l.filter((c) => c.id !== ativa.id));
+          apagarMusica(ativa.musicaPath).catch(() => {});
           atualizar("aulas", (l) =>
             l.map((a) => (a.blocos.coreografia.coreografiaId === ativa.id ? { ...a, blocos: { ...a.blocos, coreografia: { coreografiaId: "", tempo: a.blocos.coreografia.tempo } } } : a))
           );

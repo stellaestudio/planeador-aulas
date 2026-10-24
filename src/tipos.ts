@@ -96,6 +96,8 @@ export interface Formacao {
   nome: string;
   notas: string;
   posicoes: Posicao[];
+  inicio: number | null; // segundos na música em que os bailarinos começam a ir para esta formação
+  transicao: number; // segundos que demoram a chegar
 }
 
 export interface Coreografia {
@@ -104,6 +106,8 @@ export interface Coreografia {
   nome: string;
   bailarinos: Bailarino[];
   formacoes: Formacao[];
+  musicaPath: string; // ficheiro no Supabase Storage ("" = sem música)
+  musicaNome: string;
 }
 
 export interface Dados {
