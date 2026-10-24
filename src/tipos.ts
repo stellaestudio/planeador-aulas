@@ -14,6 +14,7 @@ export interface Turma {
   alongamentoPadraoId: Id | "";
   objectivoIds: Id[];
   bailarinos: string[];
+  modalidade: string; // "" = sem modalidade; id de MODALIDADES ou nome escrito pela professora
 }
 
 // A ligação objetivo ↔ turma vive só na turma (turma.objectivoIds).
@@ -31,6 +32,7 @@ export interface ItemBiblioteca {
   categoria: Categoria | ""; // só para movimentos
   objectivoIds: Id[];
   parentId: Id | ""; // variação de outro item
+  modalidade: string; // "" = geral (serve para todas)
 }
 
 export interface Espetaculo {

@@ -1,9 +1,19 @@
 import { useState } from "react";
-import { Check, Edit2, Flame, Music, Plus, Sparkles, Trash2, Wind, type LucideIcon } from "lucide-react";
+import { BookOpen, Check, Edit2, Flame, ListPlus, Music, Plus, Sparkles, Trash2, Wind, type LucideIcon } from "lucide-react";
 import type { Atualizar, Categoria, Dados, ItemBiblioteca } from "../../tipos";
 import { uid } from "../../util";
 import { aulasQueUsam, semItens } from "../../regras";
 import { Card, Escolhas, Field, GhostButton, IconButton, inputClass, Pill, PrimaryButton, Vazio } from "../../ui";
+import { itensDosNomes, itensEmFalta, MODALIDADES, modalidadesProprias, modalidadesUsadas, nomeModalidade, nomesDoTexto } from "../../modalidades";
+import { SeletorModalidade } from "../comum/SeletorModalidade";
+
+const TODAS = "*";
+
+interface Varios {
+  texto: string;
+  categoria: Categoria;
+  modalidade: string;
+}
 
 export const CATEGORIAS_MOV: { id: Categoria; label: string; icon: LucideIcon }[] = [
   { id: "aquecimento", label: "Aquecimento", icon: Flame },
@@ -18,15 +28,41 @@ export function BibliotecaTab({ dados, atualizar }: { dados: Dados; atualizar: A
   const [subTab, setSubTab] = useState<SubTab>("movimentos");
   const [editing, setEditing] = useState<ItemBiblioteca | null>(null);
   const [novoObjetivo, setNovoObjetivo] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState(TODAS); // modalidade a mostrar
+  const [varios, setVarios] = useState<Varios | null>(null); // "Adicionar vários"
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const tipo = subTab === "dinamicas" ? "dinamica" : "movimento";
-  const lista = dados.biblioteca.filter((m) => m.tipo === tipo);
-  const pais = lista.filter((m) => !m.parentId);
+  const usadas = modalidadesUsadas(dados.turmas, dados.biblioteca);
+  const proprias = modalidadesProprias(dados.turmas, dados.biblioteca);
+  const haGerais = dados.biblioteca.some((m) => !m.modalidade);
+  const lista = dados.biblioteca.filter((m) => m.tipo === tipo && (filtro === TODAS || m.modalidade === filtro));
+  const pais = lista.filter((m) => !m.parentId || !lista.some((p) => p.id === m.parentId));
+  const modalidadeNova = filtro === TODAS ? "" : filtro;
   const objetivosAtivos = dados.objectivos.filter((o) => !o.arquivado || editing?.objectivoIds.includes(o.id));
 
   const mudarSubTab = (s: SubTab) => {
     setSubTab(s);
     setEditing(null);
+    setVarios(null);
+    setAviso(null);
+  };
+
+  const guardarVarios = () => {
+    if (!varios) return;
+    const nomes = nomesDoTexto(varios.texto);
+    const novos = itensDosNomes(dados.biblioteca, nomes, { tipo, categoria: varios.categoria, modalidade: varios.modalidade });
+    if (novos.length) atualizar("biblioteca", (l) => [...l, ...novos]);
+    const repetidos = nomes.length - novos.length;
+    setAviso(`${novos.length} adicionados${repetidos ? ` (${repetidos} já existiam)` : ""}.`);
+    setVarios(null);
+  };
+
+  const juntarTipicos = (modalidadeId: string) => {
+    const novos = itensEmFalta(dados.biblioteca, modalidadeId);
+    if (novos.length) atualizar("biblioteca", (l) => [...l, ...novos]);
+    setAviso(`${nomeModalidade(modalidadeId)}: ${novos.length} itens adicionados.`);
+    setFiltro(modalidadeId);
   };
 
   const novoItem = (parent?: ItemBiblioteca): ItemBiblioteca => ({
@@ -37,14 +73,17 @@ export function BibliotecaTab({ dados, atualizar }: { dados: Dados; atualizar: A
     categoria: parent ? parent.categoria : tipo === "movimento" ? "tecnica" : "",
     objectivoIds: [],
     parentId: parent?.id ?? "",
+    modalidade: parent ? parent.modalidade : modalidadeNova,
   });
 
   const guardar = () => {
     if (!editing || !editing.nome.trim()) return;
     const item = { ...editing, nome: editing.nome.trim() };
     atualizar("biblioteca", (l) => (l.some((m) => m.id === item.id) ? l.map((m) => (m.id === item.id ? item : m)) : [...l, item]));
-    // As variações seguem a categoria do item pai.
-    if (!item.parentId) atualizar("biblioteca", (l) => l.map((m) => (m.parentId === item.id ? { ...m, categoria: item.categoria } : m)));
+    // As variações seguem a categoria e a modalidade do item pai.
+    if (!item.parentId) {
+      atualizar("biblioteca", (l) => l.map((m) => (m.parentId === item.id ? { ...m, categoria: item.categoria, modalidade: item.modalidade } : m)));
+    }
     setEditing(null);
   };
 
@@ -131,46 +170,81 @@ export function BibliotecaTab({ dados, atualizar }: { dados: Dados; atualizar: A
         </div>
       ) : (
         <>
-          {pais.length === 0 && !editing && <Vazio>Biblioteca vazia. Adiciona o primeiro item.</Vazio>}
-          {pais.map((m) => {
-            const variacoes = lista.filter((v) => v.parentId === m.id);
-            const cat = CATEGORIAS_MOV.find((c) => c.id === m.categoria);
+          {(usadas.length > 0 || filtro !== TODAS) && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mt-1">
+              {[TODAS, ...usadas, ...(haGerais && usadas.length ? [""] : [])].map((m) => (
+                <button
+                  key={m || "geral"}
+                  type="button"
+                  onClick={() => setFiltro(m)}
+                  className={`shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-full border ${filtro === m ? "bg-pink-400 text-white border-pink-400" : "bg-white/70 text-gray-500 border-white"}`}
+                >
+                  {m === TODAS ? "Todas" : m === "" ? "Gerais" : nomeModalidade(m)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {aviso && <div className="text-xs text-teal-800 bg-teal-50 rounded-lg px-3 py-2">{aviso}</div>}
+
+          {pais.length === 0 && !editing && !varios && (
+            <Vazio>{filtro === TODAS ? "Biblioteca vazia. Adiciona o primeiro item ou junta uma biblioteca típica (mais abaixo)." : "Nada nesta modalidade."}</Vazio>
+          )}
+
+          {(tipo === "movimento" ? CATEGORIAS_MOV.map((c) => c.id) : [""]).map((cat) => {
+            const doGrupo = pais.filter((m) => (tipo === "movimento" ? (m.categoria || "tecnica") === cat : true));
+            if (!doGrupo.length) return null;
+            const info = CATEGORIAS_MOV.find((c) => c.id === cat);
             return (
-              <Card key={m.id}>
-                <div className="flex justify-between items-start gap-2">
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-800 text-sm">{m.nome}</div>
-                    {m.descricao && <div className="text-xs text-gray-500 mt-0.5 whitespace-pre-line">{m.descricao}</div>}
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {cat && <Pill color="teal">{cat.label}</Pill>}
-                      {m.objectivoIds.map((oid) => {
-                        const o = dados.objectivos.find((x) => x.id === oid);
-                        return o ? <Pill key={oid} color="purple">{o.nome}</Pill> : null;
-                      })}
-                    </div>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <IconButton onClick={() => setEditing(m)} title="Editar"><Edit2 size={13} /></IconButton>
-                    <IconButton onClick={() => eliminar(m)} perigo title="Eliminar"><Trash2 size={13} /></IconButton>
-                  </div>
-                </div>
-                {variacoes.length > 0 && (
-                  <div className="mt-2 pl-3 border-l-2 border-gray-100 flex flex-col gap-1.5">
-                    {variacoes.map((v) => (
-                      <div key={v.id} className="flex justify-between items-center gap-2">
-                        <span className="text-xs text-gray-600">↳ {v.nome}</span>
-                        <div className="flex gap-1">
-                          <IconButton onClick={() => setEditing(v)} title="Editar variação" className="p-1!"><Edit2 size={11} /></IconButton>
-                          <IconButton onClick={() => eliminar(v)} perigo title="Eliminar variação" className="p-1!"><Trash2 size={11} /></IconButton>
-                        </div>
-                      </div>
-                    ))}
+              <div key={cat || "dinamicas"} className="flex flex-col gap-2">
+                {info && (
+                  <div className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 px-1 mt-1">
+                    <info.icon size={13} /> {info.label} <span className="font-normal text-gray-400">({doGrupo.length})</span>
                   </div>
                 )}
-                <button type="button" onClick={() => setEditing(novoItem(m))} className="text-xs text-pink-500 font-medium mt-2 flex items-center gap-1">
-                  <Plus size={12} /> Adicionar variação
-                </button>
-              </Card>
+                {doGrupo.map((m) => {
+                  const variacoes = lista.filter((v) => v.parentId === m.id);
+                  return (
+                    <Card key={m.id} className="py-3!">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-800 text-sm">{m.nome}</div>
+                          {m.descricao && <div className="text-xs text-gray-500 mt-0.5 whitespace-pre-line">{m.descricao}</div>}
+                          {(m.objectivoIds.length > 0 || (filtro === TODAS && m.modalidade)) && (
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {filtro === TODAS && m.modalidade && <Pill color="pink">{nomeModalidade(m.modalidade)}</Pill>}
+                              {m.objectivoIds.map((oid) => {
+                                const o = dados.objectivos.find((x) => x.id === oid);
+                                return o ? <Pill key={oid} color="purple">{o.nome}</Pill> : null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <IconButton onClick={() => setEditing(m)} title="Editar"><Edit2 size={13} /></IconButton>
+                          <IconButton onClick={() => eliminar(m)} perigo title="Eliminar"><Trash2 size={13} /></IconButton>
+                        </div>
+                      </div>
+                      {variacoes.length > 0 && (
+                        <div className="mt-2 pl-3 border-l-2 border-gray-100 flex flex-col gap-1.5">
+                          {variacoes.map((v) => (
+                            <div key={v.id} className="flex justify-between items-center gap-2">
+                              <span className="text-xs text-gray-600">↳ {v.nome}</span>
+                              <div className="flex gap-1">
+                                <IconButton onClick={() => setEditing(v)} title="Editar variação" className="p-1!"><Edit2 size={11} /></IconButton>
+                                <IconButton onClick={() => eliminar(v)} perigo title="Eliminar variação" className="p-1!"><Trash2 size={11} /></IconButton>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button type="button" onClick={() => setEditing(novoItem(m))} className="text-xs text-pink-500 font-medium mt-1.5 flex items-center gap-1">
+                        <Plus size={12} /> Adicionar variação
+                      </button>
+                    </Card>
+                  );
+                })}
+              </div>
             );
           })}
 
@@ -184,6 +258,11 @@ export function BibliotecaTab({ dados, atualizar }: { dados: Dados; atualizar: A
                 <Field label="Descrição (opcional)">
                   <textarea className={inputClass} rows={2} value={editing.descricao} onChange={(e) => setEditing({ ...editing, descricao: e.target.value })} />
                 </Field>
+                {!editing.parentId && (
+                  <Field label="Modalidade">
+                    <SeletorModalidade value={editing.modalidade} onChange={(modalidade) => setEditing({ ...editing, modalidade })} proprias={proprias} semModalidade="Geral (todas as modalidades)" />
+                  </Field>
+                )}
                 {subTab === "movimentos" && !editing.parentId && (
                   <Field label="Categoria">
                     <select className={inputClass} value={editing.categoria} onChange={(e) => setEditing({ ...editing, categoria: e.target.value as Categoria })}>
@@ -202,11 +281,68 @@ export function BibliotecaTab({ dados, atualizar }: { dados: Dados; atualizar: A
             </Card>
           )}
 
-          {!editing && (
-            <PrimaryButton onClick={() => setEditing(novoItem())}>
-              <Plus size={16} /> {subTab === "movimentos" ? "Novo movimento" : "Nova dinâmica"}
-            </PrimaryButton>
+          {varios && (
+            <Card>
+              <div className="flex flex-col gap-3">
+                <Field label={subTab === "movimentos" ? "Movimentos" : "Dinâmicas"}>
+                  <textarea
+                    autoFocus
+                    className={inputClass}
+                    rows={5}
+                    value={varios.texto}
+                    onChange={(e) => setVarios({ ...varios, texto: e.target.value })}
+                    placeholder={"Um por linha ou separados por vírgulas.\nEx: plié, tendu, jeté"}
+                  />
+                  <span className="text-[11px] text-gray-400">{nomesDoTexto(varios.texto).length} para adicionar</span>
+                </Field>
+                <Field label="Modalidade">
+                  <SeletorModalidade value={varios.modalidade} onChange={(modalidade) => setVarios({ ...varios, modalidade })} proprias={proprias} semModalidade="Geral (todas as modalidades)" />
+                </Field>
+                {subTab === "movimentos" && (
+                  <Field label="Categoria">
+                    <select className={inputClass} value={varios.categoria} onChange={(e) => setVarios({ ...varios, categoria: e.target.value as Categoria })}>
+                      {CATEGORIAS_MOV.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    </select>
+                  </Field>
+                )}
+                <div className="flex gap-2">
+                  <PrimaryButton onClick={guardarVarios} className="flex-1" disabled={!nomesDoTexto(varios.texto).length}>Adicionar</PrimaryButton>
+                  <GhostButton onClick={() => setVarios(null)}>Cancelar</GhostButton>
+                </div>
+              </div>
+            </Card>
           )}
+
+          {!editing && !varios && (
+            <div className="flex gap-2">
+              <PrimaryButton onClick={() => { setAviso(null); setEditing(novoItem()); }} className="flex-1">
+                <Plus size={16} /> {subTab === "movimentos" ? "Novo movimento" : "Nova dinâmica"}
+              </PrimaryButton>
+              <GhostButton onClick={() => { setAviso(null); setVarios({ texto: "", categoria: "tecnica", modalidade: modalidadeNova }); }} className="shrink-0">
+                <ListPlus size={15} /> Vários
+              </GhostButton>
+            </div>
+          )}
+
+          <Card className="mt-2">
+            <div className="text-sm font-medium text-gray-700 flex items-center gap-1.5 mb-1"><BookOpen size={15} className="text-pink-400" /> Bibliotecas típicas</div>
+            <p className="text-xs text-gray-500 mb-2">Junta os movimentos, aquecimentos, alongamentos e dinâmicas típicos de uma modalidade. Os que já tens não são repetidos.</p>
+            <div className="flex flex-col gap-1.5">
+              {MODALIDADES.map((m) => {
+                const n = itensEmFalta(dados.biblioteca, m.id).length;
+                return (
+                  <div key={m.id} className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-700">{m.nome}</span>
+                    {n ? (
+                      <GhostButton onClick={() => juntarTipicos(m.id)} className="py-1! text-xs!"><Plus size={12} /> Juntar {n}</GhostButton>
+                    ) : (
+                      <span className="text-xs text-teal-600 flex items-center gap-1"><Check size={13} /> Já tens</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
         </>
       )}
     </div>

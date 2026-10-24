@@ -40,7 +40,7 @@ export function DarAula({ dados, atualizar, aula, turma, onDone }: Props) {
     const existente = dados.biblioteca.find((m) => m.tipo === tipo && m.nome.toLowerCase() === nome.toLowerCase());
     const itemId = existente?.id ?? uid();
     if (!existente) {
-      atualizar("biblioteca", (l) => [...l, { id: itemId, tipo, nome, descricao: "", categoria: tipo === "movimento" ? "tecnica" : "", objectivoIds: [], parentId: "" }]);
+      atualizar("biblioteca", (l) => [...l, { id: itemId, tipo, nome, descricao: "", categoria: tipo === "movimento" ? "tecnica" : "", objectivoIds: [], parentId: "", modalidade: turma.modalidade }]);
     }
     mudar((a) => {
       const lista = a.blocos[bloco];

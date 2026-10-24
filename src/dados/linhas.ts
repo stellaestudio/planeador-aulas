@@ -15,9 +15,9 @@ interface Tabela {
 // Grava-se do nível 0 para o 4; apaga-se do 4 para o 0. Dentro de cada nível vai tudo ao mesmo tempo.
 export const TABELAS: Tabela[] = [
   { nome: "objetivos", chave: ["id"], colunas: "id,nome,arquivado", ordem: "criado_em", nivel: 0 },
-  { nome: "biblioteca_itens", chave: ["id"], colunas: "id,tipo,nome,descricao,categoria,parent_id", ordem: "criado_em", nivel: 0 },
+  { nome: "biblioteca_itens", chave: ["id"], colunas: "id,tipo,nome,descricao,categoria,parent_id,modalidade", ordem: "criado_em", nivel: 0 },
   { nome: "item_objetivos", chave: ["item_id", "objetivo_id"], colunas: "item_id,objetivo_id", ordem: "item_id", nivel: 1 },
-  { nome: "turmas", chave: ["id"], colunas: "id,nome,dia_hora,duracao_padrao,aquecimento_padrao_id,alongamento_padrao_id,bailarinos", ordem: "criado_em", nivel: 1 },
+  { nome: "turmas", chave: ["id"], colunas: "id,nome,dia_hora,duracao_padrao,aquecimento_padrao_id,alongamento_padrao_id,bailarinos,modalidade", ordem: "criado_em", nivel: 1 },
   { nome: "turma_objetivos", chave: ["turma_id", "objetivo_id"], colunas: "turma_id,objetivo_id", ordem: "turma_id", nivel: 2 },
   { nome: "espetaculos", chave: ["id"], colunas: "id,nome,data", ordem: "criado_em", nivel: 0 },
   { nome: "espetaculo_turmas", chave: ["espetaculo_id", "turma_id"], colunas: "espetaculo_id,turma_id", ordem: "espetaculo_id", nivel: 2 },
@@ -44,12 +44,12 @@ export function paraLinhas(d: Dados): Linhas {
   return {
     objetivos: d.objectivos.map((o) => ({ id: o.id, nome: o.nome, arquivado: o.arquivado })),
     biblioteca_itens: d.biblioteca.map((m) => ({
-      id: m.id, tipo: m.tipo, nome: m.nome, descricao: m.descricao, categoria: ouNull(m.categoria), parent_id: ouNull(m.parentId),
+      id: m.id, tipo: m.tipo, nome: m.nome, descricao: m.descricao, categoria: ouNull(m.categoria), parent_id: ouNull(m.parentId), modalidade: m.modalidade,
     })),
     item_objetivos: d.biblioteca.flatMap((m) => m.objectivoIds.map((o) => ({ item_id: m.id, objetivo_id: o }))),
     turmas: d.turmas.map((t) => ({
       id: t.id, nome: t.nome, dia_hora: t.diaHora, duracao_padrao: Math.round(Number(t.duracaoPadrao) || 0),
-      aquecimento_padrao_id: ouNull(t.aquecimentoPadraoId), alongamento_padrao_id: ouNull(t.alongamentoPadraoId), bailarinos: t.bailarinos,
+      aquecimento_padrao_id: ouNull(t.aquecimentoPadraoId), alongamento_padrao_id: ouNull(t.alongamentoPadraoId), bailarinos: t.bailarinos, modalidade: t.modalidade,
     })),
     turma_objetivos: d.turmas.flatMap((t) => t.objectivoIds.map((o) => ({ turma_id: t.id, objetivo_id: o }))),
     espetaculos: d.espetaculos.map((e) => ({ id: e.id, nome: e.nome, data: e.data })),
@@ -102,6 +102,7 @@ export function deLinhas(l: Linhas): Dados {
       categoria: texto(r.categoria) as Dados["biblioteca"][number]["categoria"],
       objectivoIds: objetivosDoItem(String(r.id)).map((x) => String(x.objetivo_id)),
       parentId: texto(r.parent_id),
+      modalidade: texto(r.modalidade),
     })),
     turmas: l.turmas.map((r) => ({
       id: String(r.id),
@@ -112,6 +113,7 @@ export function deLinhas(l: Linhas): Dados {
       alongamentoPadraoId: texto(r.alongamento_padrao_id),
       objectivoIds: objetivosDaTurma(String(r.id)).map((x) => String(x.objetivo_id)),
       bailarinos: (r.bailarinos as string[]) ?? [],
+      modalidade: texto(r.modalidade),
     })),
     espetaculos: l.espetaculos.map((r) => ({
       id: String(r.id), nome: String(r.nome), data: String(r.data), turmaIds: turmasDoEspetaculo(String(r.id)).map((x) => String(x.turma_id)),

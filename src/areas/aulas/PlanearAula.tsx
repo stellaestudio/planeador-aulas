@@ -7,6 +7,7 @@ import {
 } from "../../regras";
 import { Cabecalho, Card, Field, GhostButton, inputClass, PrimaryButton } from "../../ui";
 import { EtiquetaPorFazer } from "./EtiquetaPorFazer";
+import { nomeModalidade } from "../../modalidades";
 
 interface Props {
   dados: Dados;
@@ -41,10 +42,17 @@ export function PlanearAula({ dados, atualizar, turma, aulaId, onDone, onAbrirEd
       }
   );
 
-  const lib = dados.biblioteca;
+  // Mostra só os itens da modalidade da turma e os gerais (a não ser que se peça para ver todos).
+  const [verTodas, setVerTodas] = useState(false);
+  const filtrar = Boolean(turma.modalidade) && !verTodas;
+  const lib = dados.biblioteca.filter((m) => !filtrar || !m.modalidade || m.modalidade === turma.modalidade);
+  const haOutras = Boolean(turma.modalidade) && dados.biblioteca.some((m) => m.modalidade && m.modalidade !== turma.modalidade);
   const movimentosLib = lib.filter((m) => m.tipo === "movimento" && m.categoria !== "aquecimento" && m.categoria !== "alongamento");
-  const aquecimentosLib = lib.filter((m) => m.categoria === "aquecimento");
-  const alongamentosLib = lib.filter((m) => m.categoria === "alongamento");
+  // O item já escolhido aparece sempre, mesmo que seja de outra modalidade.
+  const comEscolhido = (categoria: string, escolhido: string) =>
+    dados.biblioteca.filter((m) => m.categoria === categoria && (lib.includes(m) || m.id === escolhido));
+  const aquecimentosLib = comEscolhido("aquecimento", aula.blocos.aquecimento.itemId);
+  const alongamentosLib = comEscolhido("alongamento", aula.blocos.alongamento.itemId);
   const dinamicasLib = lib.filter((m) => m.tipo === "dinamica");
 
   const setBloco = <K extends keyof Aula["blocos"]>(k: K, v: Aula["blocos"][K]) => setAula((a) => ({ ...a, blocos: { ...a.blocos, [k]: v } }));
@@ -101,6 +109,12 @@ export function PlanearAula({ dados, atualizar, turma, aulaId, onDone, onAbrirEd
           </Field>
         </div>
       </Card>
+
+      {haOutras && (
+        <button type="button" onClick={() => setVerTodas((v) => !v)} className="text-xs text-pink-500 font-medium self-start px-1">
+          {verTodas ? `Mostrar só ${nomeModalidade(turma.modalidade)} e gerais` : "Mostrar também itens de outras modalidades"}
+        </button>
+      )}
 
       <BlocoUmItem titulo="Aquecimento" icon={Flame} lib={aquecimentosLib} value={aula.blocos.aquecimento} onChange={(v) => setBloco("aquecimento", v)} />
 

@@ -4,8 +4,9 @@ App para planear aulas de dança e ir juntando, ao longo do ano, uma biblioteca 
 Funciona no telemóvel e no computador e pode ser instalada no ecrã inicial.
 
 ## O que já faz
-- **Turmas**: duração padrão, aquecimento/alongamento padrão, objetivos, alunas.
-- **Biblioteca**: movimentos (por categoria) e dinâmicas, com variações e objetivos; objetivos podem ser arquivados.
+- **Turmas**: modalidade, duração padrão, aquecimento/alongamento padrão, objetivos, alunas.
+- **Modalidades** (`src/modalidades.ts`): dança oriental, ballet, contemporâneo, hip hop e acrodance têm biblioteca típica; ao escolher a modalidade na turma os itens em falta entram na biblioteca. Também se pode definir uma modalidade própria e escrever logo os movimentos (um por linha ou separados por vírgulas).
+- **Biblioteca**: movimentos (por categoria) e dinâmicas, com variações, objetivos e modalidade; filtro por modalidade, "Vários" para adicionar muitos de uma vez e bibliotecas típicas. Ao planear, aparecem os itens da modalidade da turma e os gerais.
 - **Aulas**: planear por blocos (aquecimento, movimentos, dinâmicas, coreografia, alongamento), com tempos opcionais e aviso se passa/falta tempo.
   - O que ficou por fazer na última aula passa sozinho para a seguinte.
   - Cada item mostra há quantas aulas está por fazer; a partir de 3 aulas fica destacado (e aparece um aviso na lista da turma).

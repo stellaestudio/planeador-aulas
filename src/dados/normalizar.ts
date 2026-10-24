@@ -56,6 +56,7 @@ export function normalizar(bruto: any): Dados {
     alongamentoPadraoId: texto(t.alongamentoPadraoId),
     objectivoIds: ids(t.objectivoIds),
     bailarinos: lista(t.bailarinos).map(texto).filter(Boolean),
+    modalidade: texto(t.modalidade),
   }));
 
   // No protótipo o objetivo também tinha turmaIds; juntamos essa ligação à turma.
@@ -77,6 +78,7 @@ export function normalizar(bruto: any): Dados {
       categoria: ["aquecimento", "tecnica", "coreografia", "alongamento"].includes(m.categoria) ? m.categoria : "",
       objectivoIds: ids(m.objectivoIds),
       parentId: texto(m.parentId),
+      modalidade: texto(m.modalidade),
     })),
     espetaculos: lista(d.espetaculos).map((e: any) => ({ id: texto(e.id), nome: texto(e.nome), data: texto(e.data), turmaIds: ids(e.turmaIds) })),
     aulas: lista(d.aulas).map(aula),

@@ -4,7 +4,7 @@ Projeto `xxdsxcdpounzjgutrlln` (região eu-west-1, organização Stellae Studio,
 Separado do projeto da app de gestão do estúdio.
 
 ## Tabelas
-`001_esquema.sql` (já aplicado a 22/10/2026). Todas as tabelas têm `owner_id` (o professor) e Row Level
+`001_esquema.sql` (aplicado a 22/10/2026) e `002_modalidades.sql` (aplicado a 24/10/2026). Todas as tabelas têm `owner_id` (o professor) e Row Level
 Security: cada professor só vê e altera as suas linhas. As ligações entre tabelas incluem o `owner_id`,
 por isso não é possível ligar dados de professores diferentes.
 
