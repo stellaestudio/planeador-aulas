@@ -4,7 +4,7 @@ Projeto `xxdsxcdpounzjgutrlln` (região eu-west-1, organização Stellae Studio,
 Separado do projeto da app de gestão do estúdio.
 
 ## Tabelas
-`001_esquema.sql` (aplicado a 22/10/2026) , `002_modalidades.sql` e `003_musica_formacoes.sql` (aplicados a 24/10/2026). O 003 cria o espaço privado `musicas` no Storage (cada professor só acede à sua pasta). Todas as tabelas têm `owner_id` (o professor) e Row Level
+`001_esquema.sql` (aplicado a 22/10/2026) , `002_modalidades.sql`, `003_musica_formacoes.sql` e `004_aulas_privadas.sql` (aplicados a 24/10/2026). O 003 cria o espaço privado `musicas` no Storage (cada professor só acede à sua pasta). Todas as tabelas têm `owner_id` (o professor) e Row Level
 Security: cada professor só vê e altera as suas linhas. As ligações entre tabelas incluem o `owner_id`,
 por isso não é possível ligar dados de professores diferentes.
 

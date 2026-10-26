@@ -1,5 +1,5 @@
 // Regras de negócio num só sítio, para os ecrãs não duplicarem lógica.
-import type { Aula, BlocoLista, Dados, Espetaculo, Id, ItemAula } from "./tipos";
+import type { Aula, BlocoLista, Dados, Espetaculo, Id, ItemAula, Turma } from "./tipos";
 import { diasEntre, fmtData, hojeISO, minutos } from "./util";
 
 /** A partir de quantas aulas seguidas por fazer um item fica destacado. */
@@ -71,12 +71,23 @@ export function nomeDoItem(dados: Dados, id: Id): string {
   return dados.biblioteca.find((m) => m.id === id)?.nome ?? "(item eliminado)";
 }
 
-export function resumoWhatsApp(dados: Dados, aula: Aula, nomeTurma: string): string {
+/** Número da aula numa turma/aula privada: as dadas contam por data; uma planeada é a seguinte às dadas. */
+export function numeroDaAula(aulas: Aula[], aula: Aula): number {
+  const dadas = aulas.filter((a) => a.turmaId === aula.turmaId && a.estado === "dada").sort((a, b) => a.data.localeCompare(b.data) || a.id.localeCompare(b.id));
+  const i = dadas.findIndex((a) => a.id === aula.id);
+  return i >= 0 ? i + 1 : dadas.length + 1;
+}
+
+export const aulasDadasDe = (aulas: Aula[], turmaId: Id) => aulas.filter((a) => a.turmaId === turmaId && a.estado === "dada").length;
+
+export function resumoWhatsApp(dados: Dados, aula: Aula, turma: Turma): string {
   const feitos = [...aula.blocos.movimentos, ...aula.blocos.dinamicas].filter((i) => i.feito).map((i) => nomeDoItem(dados, i.itemId));
+  const doPacote = turma.privada && turma.pacote ? ` (aula ${numeroDaAula(dados.aulas, aula)} de ${turma.pacote})` : "";
   const linhas = [
-    `Aula de ${fmtData(aula.data)} — ${nomeTurma}`,
+    `Aula de ${fmtData(aula.data)} — ${turma.nome}${doPacote}`,
     aula.objectivoDia ? `Objetivo: ${aula.objectivoDia}` : "",
     `Hoje demos: ${feitos.join(", ") || "—"}.`,
+    aula.paraCasa.trim() ? `Para treinar em casa: ${aula.paraCasa.trim()}` : "",
   ];
   return linhas.filter(Boolean).join("\n");
 }
@@ -106,4 +117,9 @@ export function semItens(aula: Aula, itemIds: Id[]): Aula {
       dinamicas: b.dinamicas.filter((i) => !itemIds.includes(i.itemId)),
     },
   };
+}
+
+/** Turmas primeiro, depois aulas privadas (marcadas com 👤), para as filas de escolha. */
+export function paraEscolha(turmas: Turma[]): { id: Id; nome: string }[] {
+  return [...turmas.filter((t) => !t.privada), ...turmas.filter((t) => t.privada)].map((t) => ({ id: t.id, nome: t.privada ? `👤 ${t.nome}` : t.nome }));
 }

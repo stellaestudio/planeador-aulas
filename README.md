@@ -5,13 +5,14 @@ Funciona no telemóvel e no computador e pode ser instalada no ecrã inicial.
 
 ## O que já faz
 - **Turmas**: modalidade, duração padrão, aquecimento/alongamento padrão, objetivos, alunas.
+- **Aulas privadas**: "turma" marcada como privada (aluno/a ou par), com pacote de aulas opcional e contador ("3 de 10 aulas dadas", aviso quando está a acabar). Planeiam-se e dão-se como as turmas; o resumo para WhatsApp indica "aula 3 de 10".
 - **Modalidades** (`src/modalidades.ts`): dança oriental, ballet, contemporâneo, hip hop e acrodance têm biblioteca típica; ao escolher a modalidade na turma os itens em falta entram na biblioteca. Também se pode definir uma modalidade própria e escrever logo os movimentos (um por linha ou separados por vírgulas).
 - **Biblioteca**: movimentos (por categoria) e dinâmicas, com variações, objetivos e modalidade; filtro por modalidade, "Vários" para adicionar muitos de uma vez e bibliotecas típicas. Ao planear, aparecem os itens da modalidade da turma e os gerais.
 - **Aulas**: planear por blocos (aquecimento, movimentos, dinâmicas, coreografia, alongamento), com tempos opcionais e aviso se passa/falta tempo.
   - O que ficou por fazer na última aula passa sozinho para a seguinte.
   - Cada item mostra há quantas aulas está por fazer; a partir de 3 aulas fica destacado (e aparece um aviso na lista da turma).
   - Contagem decrescente para o próximo espetáculo na lista e dentro do plano da aula.
-  - Durante/depois da aula: marcar feito/não feito (grava a cada toque), juntar extras, resumo para WhatsApp (copiar ou abrir no WhatsApp).
+  - Durante/depois da aula: marcar feito/não feito (grava a cada toque), juntar extras, "Para treinar em casa" e resumo para WhatsApp (copiar ou abrir no WhatsApp).
 - **Espetáculos** com turmas participantes.
 - **Formações 2D**: arrastar bailarinos, trajetórias, grelha, copiar formação, exportar PNG, imprimir/PDF.
 - **Música e animação**: cada coreografia pode ter a sua música (guardada no Supabase Storage, pasta privada de cada professor); cada formação tem o momento em que muda e quanto tempo demora a transição (botão "Agora" com a música a tocar). "Ver animação" mostra os bailarinos a deslizar entre formações com a música e grava um vídeo vertical (720×1280) para descarregar ou partilhar.

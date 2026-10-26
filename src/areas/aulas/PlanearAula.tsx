@@ -30,6 +30,7 @@ export function PlanearAula({ dados, atualizar, turma, aulaId, onDone, onAbrirEd
         turmaId: turma.id,
         data: hojeISO(),
         objectivoDia: "",
+        paraCasa: "",
         duracao: turma.duracaoPadrao,
         estado: "planeada",
         blocos: {

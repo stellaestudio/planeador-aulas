@@ -17,7 +17,7 @@ export const TABELAS: Tabela[] = [
   { nome: "objetivos", chave: ["id"], colunas: "id,nome,arquivado", ordem: "criado_em", nivel: 0 },
   { nome: "biblioteca_itens", chave: ["id"], colunas: "id,tipo,nome,descricao,categoria,parent_id,modalidade", ordem: "criado_em", nivel: 0 },
   { nome: "item_objetivos", chave: ["item_id", "objetivo_id"], colunas: "item_id,objetivo_id", ordem: "item_id", nivel: 1 },
-  { nome: "turmas", chave: ["id"], colunas: "id,nome,dia_hora,duracao_padrao,aquecimento_padrao_id,alongamento_padrao_id,bailarinos,modalidade", ordem: "criado_em", nivel: 1 },
+  { nome: "turmas", chave: ["id"], colunas: "id,nome,dia_hora,duracao_padrao,aquecimento_padrao_id,alongamento_padrao_id,bailarinos,modalidade,privada,pacote", ordem: "criado_em", nivel: 1 },
   { nome: "turma_objetivos", chave: ["turma_id", "objetivo_id"], colunas: "turma_id,objetivo_id", ordem: "turma_id", nivel: 2 },
   { nome: "espetaculos", chave: ["id"], colunas: "id,nome,data", ordem: "criado_em", nivel: 0 },
   { nome: "espetaculo_turmas", chave: ["espetaculo_id", "turma_id"], colunas: "espetaculo_id,turma_id", ordem: "espetaculo_id", nivel: 2 },
@@ -25,7 +25,7 @@ export const TABELAS: Tabela[] = [
   { nome: "bailarinos", chave: ["id"], colunas: "id,coreografia_id,nome,cor,ordem", ordem: "ordem", nivel: 3 },
   { nome: "formacoes", chave: ["id"], colunas: "id,coreografia_id,nome,notas,ordem,inicio,transicao", ordem: "ordem", nivel: 3 },
   { nome: "formacao_posicoes", chave: ["formacao_id", "bailarino_id"], colunas: "formacao_id,bailarino_id,x,y", ordem: "formacao_id", nivel: 4 },
-  { nome: "aulas", chave: ["id"], colunas: "id,turma_id,data,objetivo_dia,duracao,estado,aquecimento_id,aquecimento_tempo,alongamento_id,alongamento_tempo,coreografia_id,coreografia_tempo", ordem: "criado_em", nivel: 3 },
+  { nome: "aulas", chave: ["id"], colunas: "id,turma_id,data,objetivo_dia,para_casa,duracao,estado,aquecimento_id,aquecimento_tempo,alongamento_id,alongamento_tempo,coreografia_id,coreografia_tempo", ordem: "criado_em", nivel: 3 },
   { nome: "aula_itens", chave: ["aula_id", "bloco", "item_id"], colunas: "aula_id,bloco,item_id,ordem,feito,tempo,extra", ordem: "ordem", nivel: 4 },
 ];
 
@@ -49,7 +49,7 @@ export function paraLinhas(d: Dados): Linhas {
     item_objetivos: d.biblioteca.flatMap((m) => m.objectivoIds.map((o) => ({ item_id: m.id, objetivo_id: o }))),
     turmas: d.turmas.map((t) => ({
       id: t.id, nome: t.nome, dia_hora: t.diaHora, duracao_padrao: Math.round(Number(t.duracaoPadrao) || 0),
-      aquecimento_padrao_id: ouNull(t.aquecimentoPadraoId), alongamento_padrao_id: ouNull(t.alongamentoPadraoId), bailarinos: t.bailarinos, modalidade: t.modalidade,
+      aquecimento_padrao_id: ouNull(t.aquecimentoPadraoId), alongamento_padrao_id: ouNull(t.alongamentoPadraoId), bailarinos: t.bailarinos, modalidade: t.modalidade, privada: t.privada, pacote: t.pacote,
     })),
     turma_objetivos: d.turmas.flatMap((t) => t.objectivoIds.map((o) => ({ turma_id: t.id, objetivo_id: o }))),
     espetaculos: d.espetaculos.map((e) => ({ id: e.id, nome: e.nome, data: e.data })),
@@ -59,7 +59,7 @@ export function paraLinhas(d: Dados): Linhas {
     formacoes: d.coreografias.flatMap((c) => c.formacoes.map((f, ordem) => ({ id: f.id, coreografia_id: c.id, nome: f.nome, notas: f.notas, ordem, inicio: f.inicio, transicao: f.transicao }))),
     formacao_posicoes: d.coreografias.flatMap((c) => c.formacoes.flatMap((f) => f.posicoes.map((p) => ({ formacao_id: f.id, bailarino_id: p.bailarinoId, x: p.x, y: p.y })))),
     aulas: d.aulas.map((a) => ({
-      id: a.id, turma_id: a.turmaId, data: a.data, objetivo_dia: a.objectivoDia, duracao: Math.round(Number(a.duracao) || 0), estado: a.estado,
+      id: a.id, turma_id: a.turmaId, data: a.data, objetivo_dia: a.objectivoDia, para_casa: a.paraCasa, duracao: Math.round(Number(a.duracao) || 0), estado: a.estado,
       aquecimento_id: ouNull(a.blocos.aquecimento.itemId), aquecimento_tempo: numOuNull(a.blocos.aquecimento.tempo),
       alongamento_id: ouNull(a.blocos.alongamento.itemId), alongamento_tempo: numOuNull(a.blocos.alongamento.tempo),
       coreografia_id: ouNull(a.blocos.coreografia.coreografiaId), coreografia_tempo: numOuNull(a.blocos.coreografia.tempo),
@@ -114,6 +114,8 @@ export function deLinhas(l: Linhas): Dados {
       objectivoIds: objetivosDaTurma(String(r.id)).map((x) => String(x.objetivo_id)),
       bailarinos: (r.bailarinos as string[]) ?? [],
       modalidade: texto(r.modalidade),
+      privada: Boolean(r.privada),
+      pacote: r.pacote === null ? null : Number(r.pacote),
     })),
     espetaculos: l.espetaculos.map((r) => ({
       id: String(r.id), nome: String(r.nome), data: String(r.data), turmaIds: turmasDoEspetaculo(String(r.id)).map((x) => String(x.turma_id)),
@@ -141,6 +143,7 @@ export function deLinhas(l: Linhas): Dados {
         turmaId: String(r.turma_id),
         data: String(r.data),
         objectivoDia: texto(r.objetivo_dia),
+        paraCasa: texto(r.para_casa),
         duracao: Number(r.duracao),
         estado: r.estado === "dada" ? "dada" : "planeada",
         blocos: {

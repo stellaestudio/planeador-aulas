@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Edit2, Plus, Theater, Trash2 } from "lucide-react";
 import type { Atualizar, Dados, Espetaculo } from "../../tipos";
 import { diasAte, fmtData, uid } from "../../util";
+import { paraEscolha } from "../../regras";
 import { Card, Escolhas, Field, GhostButton, IconButton, inputClass, Pill, PrimaryButton, Vazio } from "../../ui";
 
 export function EspetaculosTab({ dados, atualizar }: { dados: Dados; atualizar: Atualizar }) {
@@ -68,7 +69,7 @@ export function EspetaculosTab({ dados, atualizar }: { dados: Dados; atualizar: 
               <input type="date" className={inputClass} value={editing.data} onChange={(e) => setEditing({ ...editing, data: e.target.value })} />
             </Field>
             <Field label="Turmas participantes">
-              <Escolhas opcoes={dados.turmas} selecionados={editing.turmaIds} onChange={(turmaIds) => setEditing({ ...editing, turmaIds })} corAtiva="bg-pink-400" vazio="Cria turmas primeiro" />
+              <Escolhas opcoes={paraEscolha(dados.turmas)} selecionados={editing.turmaIds} onChange={(turmaIds) => setEditing({ ...editing, turmaIds })} corAtiva="bg-pink-400" vazio="Cria turmas primeiro" />
             </Field>
             <div className="flex gap-2">
               <PrimaryButton onClick={guardar} className="flex-1" disabled={!editing.nome.trim() || !editing.data}>Guardar</PrimaryButton>

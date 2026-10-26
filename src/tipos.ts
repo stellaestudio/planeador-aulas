@@ -15,6 +15,8 @@ export interface Turma {
   objectivoIds: Id[];
   bailarinos: string[];
   modalidade: string; // "" = sem modalidade; id de MODALIDADES ou nome escrito pela professora
+  privada: boolean; // aula privada (um aluno ou um par) em vez de turma
+  pacote: number | null; // n.º de aulas contratadas (só aulas privadas; null = sem pacote)
 }
 
 // A ligação objetivo ↔ turma vive só na turma (turma.objectivoIds).
@@ -68,6 +70,7 @@ export interface Aula {
   turmaId: Id;
   data: string;
   objectivoDia: string;
+  paraCasa: string; // o que o aluno deve treinar em casa
   duracao: number;
   estado: "planeada" | "dada";
   blocos: {

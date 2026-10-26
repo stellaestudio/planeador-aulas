@@ -29,6 +29,7 @@ function aula(a: any): Aula {
     turmaId: texto(a.turmaId),
     data: texto(a.data),
     objectivoDia: texto(a.objectivoDia),
+    paraCasa: texto(a.paraCasa),
     duracao: Number(a.duracao) || 60,
     estado: a.estado === "dada" ? "dada" : "planeada",
     blocos: {
@@ -57,6 +58,8 @@ export function normalizar(bruto: any): Dados {
     objectivoIds: ids(t.objectivoIds),
     bailarinos: lista(t.bailarinos).map(texto).filter(Boolean),
     modalidade: texto(t.modalidade),
+    privada: Boolean(t.privada),
+    pacote: t.pacote === null || t.pacote === undefined || t.pacote === "" ? null : Number(t.pacote) || null,
   }));
 
   // No protótipo o objetivo também tinha turmaIds; juntamos essa ligação à turma.

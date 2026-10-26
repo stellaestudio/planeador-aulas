@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, MessageCircle, Plus, Star, Undo2, X } from "lucide-react";
 import type { Atualizar, Aula, BlocoLista, Dados, Turma } from "../../tipos";
 import { fmtData, uid } from "../../util";
-import { nomeDoItem, resumoWhatsApp, vezesPorFazer } from "../../regras";
+import { nomeDoItem, numeroDaAula, resumoWhatsApp, vezesPorFazer } from "../../regras";
 import { Cabecalho, Card, GhostButton, inputClass, Pill, PrimaryButton } from "../../ui";
 import { EtiquetaPorFazer } from "./EtiquetaPorFazer";
 
@@ -53,7 +53,7 @@ export function DarAula({ dados, atualizar, aula, turma, onDone }: Props) {
     setAAdicionar(null);
   };
 
-  const resumo = useMemo(() => resumoWhatsApp(dados, aula, turma.nome), [dados, aula, turma.nome]);
+  const resumo = useMemo(() => resumoWhatsApp(dados, aula, turma), [dados, aula, turma]);
   const [texto, setTexto] = useState(resumo);
   useEffect(() => setTexto(resumo), [resumo]);
 
@@ -78,6 +78,11 @@ export function DarAula({ dados, atualizar, aula, turma, onDone }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <Cabecalho titulo={`${aula.estado === "dada" ? "Aula dada" : "A dar aula"} — ${fmtData(aula.data)}`} onVoltar={onDone} />
+      {turma.privada && (
+        <div className="text-xs text-gray-500 px-1 -mt-1">
+          {turma.nome}{turma.pacote ? ` · aula ${numeroDaAula(dados.aulas, aula)} de ${turma.pacote}` : ""}
+        </div>
+      )}
 
       {aula.objectivoDia && <div className="text-xs text-gray-500 px-1">Objetivo: {aula.objectivoDia}</div>}
       {resto.length > 0 && (
@@ -129,6 +134,18 @@ export function DarAula({ dados, atualizar, aula, turma, onDone }: Props) {
           )}
         </Card>
       ))}
+
+      <Card>
+        <div className="text-sm font-medium text-gray-700 mb-2">Para treinar em casa</div>
+        <textarea
+          className={inputClass}
+          rows={2}
+          value={aula.paraCasa}
+          onChange={(e) => mudar((a) => ({ ...a, paraCasa: e.target.value }))}
+          placeholder="Opcional. Ex: repetir o shimmy 5 min por dia; ver o vídeo da coreografia"
+        />
+        <p className="text-[11px] text-gray-400 mt-1">Entra no resumo para WhatsApp.</p>
+      </Card>
 
       {aula.estado === "planeada" ? (
         <>

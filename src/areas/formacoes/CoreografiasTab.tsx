@@ -5,6 +5,7 @@ import { corParaIndice, uid } from "../../util";
 import { Card, Field, GhostButton, inputClass, PrimaryButton, SeletorTurma, Vazio } from "../../ui";
 import { CoreografiaEditor } from "./CoreografiaEditor";
 import { apagarMusica } from "../../dados/musicas";
+import { paraEscolha } from "../../regras";
 
 export interface Salto {
   turmaId: string;
@@ -45,7 +46,7 @@ export function CoreografiasTab({ dados, atualizar, salto, onSaltoUsado }: Props
   }, [dados.turmas, turmaId]);
 
   const turma = dados.turmas.find((t) => t.id === turmaId);
-  if (!turma) return <Vazio>Cria uma turma primeiro no separador Turmas.</Vazio>;
+  if (!turma) return <Vazio>Cria uma turma ou uma aula privada primeiro, no separador Turmas.</Vazio>;
 
   const ativa = dados.coreografias.find((c) => c.id === ativaId);
   if (ativa) {
@@ -80,7 +81,7 @@ export function CoreografiasTab({ dados, atualizar, salto, onSaltoUsado }: Props
 
   return (
     <div className="flex flex-col gap-3">
-      <SeletorTurma turmas={dados.turmas} selecionada={turma.id} onChange={setTurmaId} corAtiva="bg-purple-400" />
+      <SeletorTurma turmas={paraEscolha(dados.turmas)} selecionada={turma.id} onChange={setTurmaId} corAtiva="bg-purple-400" />
 
       {daTurma.map((c) => (
         <Card key={c.id} className="flex flex-row justify-between items-center gap-2 py-3!">

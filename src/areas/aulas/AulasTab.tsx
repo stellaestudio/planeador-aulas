@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, ChevronRight, Edit2, Plus, Theater, Trash2 } from "lucide-react";
 import type { Atualizar, Aula, Dados } from "../../tipos";
 import { fmtData } from "../../util";
-import { LIMITE_POR_FAZER, nomeDoItem, proximoEspetaculo, textoContagem, ultimaAulaDada, vezesPorFazer } from "../../regras";
+import { aulasDadasDe, paraEscolha, LIMITE_POR_FAZER, nomeDoItem, proximoEspetaculo, textoContagem, ultimaAulaDada, vezesPorFazer } from "../../regras";
 import { Card, GhostButton, IconButton, Pill, PrimaryButton, SeletorTurma, Vazio } from "../../ui";
 import { PlanearAula } from "./PlanearAula";
 import { DarAula } from "./DarAula";
@@ -23,7 +23,7 @@ export function AulasTab({ dados, atualizar, onIrParaFormacoes }: Props) {
   }, [dados.turmas, turmaId]);
 
   const turma = dados.turmas.find((t) => t.id === turmaId);
-  if (!turma) return <Vazio>Cria uma turma primeiro no separador Turmas.</Vazio>;
+  if (!turma) return <Vazio>Cria uma turma ou uma aula privada primeiro, no separador Turmas.</Vazio>;
 
   const aula = dados.aulas.find((a) => a.id === aulaId);
 
@@ -64,7 +64,7 @@ export function AulasTab({ dados, atualizar, onIrParaFormacoes }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <SeletorTurma turmas={dados.turmas} selecionada={turma.id} onChange={setTurmaId} />
+      <SeletorTurma turmas={paraEscolha(dados.turmas)} selecionada={turma.id} onChange={setTurmaId} />
 
       {espetaculo && (
         <Card className="bg-gradient-to-r! from-pink-100 to-purple-100 border-none! flex items-center gap-2">
@@ -74,6 +74,17 @@ export function AulasTab({ dados, atualizar, onIrParaFormacoes }: Props) {
           </div>
         </Card>
       )}
+
+      {turma.privada && turma.pacote && (() => {
+        const dadas = aulasDadasDe(dados.aulas, turma.id);
+        const faltam = turma.pacote - dadas;
+        return (
+          <Card className={`py-2.5! text-xs flex items-center gap-2 ${faltam <= 0 ? "bg-red-50!" : faltam <= 2 ? "bg-amber-50!" : "bg-teal-50!"}`}>
+            <span className="font-semibold text-gray-700">Pacote: {dadas} de {turma.pacote} aulas dadas</span>
+            <span className="text-gray-500">{faltam <= 0 ? "· pacote terminado" : faltam === 1 ? "· falta 1 aula" : `· faltam ${faltam}`}</span>
+          </Card>
+        );
+      })()}
 
       {atrasados.length > 0 && (
         <Card className="bg-amber-50! border-amber-100!">
